@@ -62,7 +62,7 @@ async function spawnWorkers() {
 
   for (let idx = 0; idx < chunks.length; idx++) {
     const startTime = performance.now();
-    const worker = new workerThreads.Worker("./index.js", {
+    const worker = new workerThreads.Worker("./src/main/node/index.js", {
       workerData: {
         filename,
         start: idx === 0 ? 0 : chunks[idx - 1],
@@ -70,10 +70,10 @@ async function spawnWorkers() {
       },
     });
 
-    let wid = worker.threadId;
+    const wid = worker.threadId;
     timeMap.set(wid, startTime);
     worker.on("message", (/** @type {ResultMap} */ data) => {
-      for (let [key, value] of data.entries()) {
+      for (const [key, value] of data.entries()) {
         const existing = finalResults.get(key);
         if (existing) {
           existing.min = Math.min(existing.min, value.min);
@@ -99,7 +99,7 @@ async function spawnWorkers() {
       stoppedWorkers += 1;
 
       if (stoppedWorkers === chunks.length) {
-        console.log("task finished successfully....");
+        printResults(finalResults);
       }
     });
   }
@@ -129,6 +129,29 @@ async function solve() {
 
 /**
  *
+ * @param {ResultMap} finalResults
+ */
+function printResults(finalResults) {
+  const sortedStations = Array.from(finalResults.keys()).sort();
+  sortedStations.forEach((station) => console.log(station));
+  // process.stdout.write("{");
+  // for (let idx = 0; idx < sortedStations.length; idx++) {
+  //   if (idx > 0) {
+  //     process.stdout.write(", ");
+  //   }
+  //   const stationResult = finalResults.get(sortedStations[idx]);
+  //   process.stdout.write(`${sortedStations[idx]}=`);
+  //   process.stdout.write(`${roundWithOneDecimal(stationResult.min / 10)}/`);
+  //   process.stdout.write(
+  //     `${roundWithOneDecimal(stationResult.sum / (10 * stationResult.count))}/`
+  //   );
+  //   process.stdout.write(`${roundWithOneDecimal(stationResult.max / 10)}`);
+  // }
+  // process.stdout.write("}\n");
+}
+
+/**
+ *
  * @param {fs.ReadStream} readStream
  */
 function parseStream(readStream) {
@@ -150,16 +173,16 @@ function parseStream(readStream) {
  */
 function parseChunk(chunk, chunkMap) {
   let readingToken = config.TOKEN_STATION_NAME;
-  let stationName = Buffer.alloc(config.STATION_NAME_LENGTH);
+  let stationName = Buffer.allocUnsafe(config.STATION_NAME_LENGTH);
   let stationNameLen = 0;
-  let temperature = Buffer.alloc(config.TEMPERATURE_LENGTH);
+  let temperature = Buffer.allocUnsafe(config.TEMPERATURE_LENGTH);
   let temperatureLen = 0;
   for (let idx = 0; idx < chunk.length; idx++) {
     if (chunk[idx] === config.CHAR_SEMICOLON) {
       readingToken = config.TOKEN_TEMPERATURE_VALUE;
     } else if (chunk[idx] === config.NEWLINE_FEED) {
       const stationNameStr = stationName.toString("utf-8", 0, stationNameLen);
-      let temperatureFloat = 0;
+      let temperatureFloat = 0 / 0;
       try {
         temperatureFloat = parseFloatBufferIntoInt(temperature, temperatureLen);
       } catch (err) {
@@ -229,6 +252,20 @@ function parseFloatBufferIntoInt(buffer, length) {
  */
 function parseDigit(char) {
   return char - 0x30;
+}
+
+/**
+ * @example
+ * round(1.2345) // "1.2"
+ * round(1.55) // "1.6"
+ * round(1) // "1.0"
+ *
+ * @param {number} num
+ * @returns {string}
+ */
+function roundWithOneDecimal(num) {
+  const fixed = Math.round(10 * num) / 10;
+  return fixed.toFixed(1);
 }
 
 solve();
