@@ -47,6 +47,7 @@ async function spawnWorkers() {
 
     if (newlineChar === -1) {
       chunks.push(size);
+      break;
     } else {
       readFileFromOffset += newlineChar + 1;
       chunks.push(readFileFromOffset);
@@ -133,21 +134,20 @@ async function solve() {
  */
 function printResults(finalResults) {
   const sortedStations = Array.from(finalResults.keys()).sort();
-  sortedStations.forEach((station) => console.log(station));
-  // process.stdout.write("{");
-  // for (let idx = 0; idx < sortedStations.length; idx++) {
-  //   if (idx > 0) {
-  //     process.stdout.write(", ");
-  //   }
-  //   const stationResult = finalResults.get(sortedStations[idx]);
-  //   process.stdout.write(`${sortedStations[idx]}=`);
-  //   process.stdout.write(`${roundWithOneDecimal(stationResult.min / 10)}/`);
-  //   process.stdout.write(
-  //     `${roundWithOneDecimal(stationResult.sum / (10 * stationResult.count))}/`
-  //   );
-  //   process.stdout.write(`${roundWithOneDecimal(stationResult.max / 10)}`);
-  // }
-  // process.stdout.write("}\n");
+  process.stdout.write("{");
+  for (let idx = 0; idx < sortedStations.length; idx++) {
+    if (idx > 0) {
+      process.stdout.write(", ");
+    }
+    const stationResult = finalResults.get(sortedStations[idx]);
+    process.stdout.write(`${sortedStations[idx]}=`);
+    process.stdout.write(`${roundWithOneDecimal(stationResult.min / 10)}/`);
+    process.stdout.write(
+      `${roundWithOneDecimal(stationResult.sum / (10 * stationResult.count))}/`
+    );
+    process.stdout.write(`${roundWithOneDecimal(stationResult.max / 10)}`);
+  }
+  process.stdout.write("}\n");
 }
 
 /**
@@ -181,8 +181,8 @@ function parseChunk(chunk, chunkMap) {
     if (chunk[idx] === config.CHAR_SEMICOLON) {
       readingToken = config.TOKEN_TEMPERATURE_VALUE;
     } else if (chunk[idx] === config.NEWLINE_FEED) {
-      const stationNameStr = stationName.toString("utf-8", 0, stationNameLen);
-      let temperatureFloat = 0 / 0;
+      const stationNameStr = stationName.toString("utf8", 0, stationNameLen);
+      let temperatureFloat = 0;
       try {
         temperatureFloat = parseFloatBufferIntoInt(temperature, temperatureLen);
       } catch (err) {
@@ -217,7 +217,7 @@ function parseChunk(chunk, chunkMap) {
 }
 
 /**
- *
+ * Range: -99.9 to 99.9
  * @param {Buffer} buffer
  * @param {number} length
  */
