@@ -64,7 +64,7 @@ function parseStream(readStream: fs.ReadStream) {
           temperatureFloat = parseFloatBufferIntoInt(
             temperature,
             temperatureLen
-          );
+          ) as number;
         } catch (err: any) {
           console.log({ temperature, temperatureLen }, err.message);
           throw err;
@@ -112,49 +112,75 @@ function parseStream(readStream: fs.ReadStream) {
   });
 }
 
-const CHAR_MINUS = "-".charCodeAt(0);
-
 /**
- * @param {Buffer} b
- * @param {number} length 1-5
- *
- * @returns {number}
+ * Range: -99.9 to 99.9
+ * @param {Buffer} buffer
+ * @param {number} length
  */
-function parseFloatBufferIntoInt(b: Buffer, length: number): number {
-  if (b[0] === CHAR_MINUS) {
-    // b can be -1.1 or -11.1
-    switch (length) {
-      case 4:
-        return -(parseOneDigit(b[1]) * 10 + parseOneDigit(b[3]));
-      case 5:
-        return -(
-          parseOneDigit(b[1]) * 100 +
-          parseOneDigit(b[2]) * 10 +
-          parseOneDigit(b[4])
-        );
+function parseFloatBufferIntoInt(buffer: Buffer, length: number) {
+  if (buffer[0] === config.CHAR_MINUS) {
+    if (length === 4) {
+      return -(parseDigit(buffer[1]) * 10 + parseDigit(buffer[3]));
+    } else if (length === 5) {
+      return -(
+        parseDigit(buffer[1]) * 100 +
+        parseDigit(buffer[2]) * 10 +
+        parseDigit(buffer[4])
+      );
     }
   } else {
-    // b can be 1.1 or 11.1
-    switch (length) {
-      case 3: // b is 1.1
-        return parseOneDigit(b[0]) * 10 + parseOneDigit(b[2]);
-      case 4:
-        return (
-          parseOneDigit(b[0]) * 100 +
-          parseOneDigit(b[1]) * 10 +
-          parseOneDigit(b[3])
-        );
+    if (length === 3) {
+      return parseDigit(buffer[0]) * 10 + parseDigit(buffer[2]);
+    } else if (length === 4) {
+      return (
+        parseDigit(buffer[0]) * 100 +
+        parseDigit(buffer[1]) * 10 +
+        parseDigit(buffer[3])
+      );
     }
   }
-
-  throw new Error("Failed to parse float buffer into int");
 }
+// /**
+//  * @param {Buffer} b
+//  * @param {number} length 1-5
+//  *
+//  * @returns {number}
+//  */
+// function parseFloatBufferIntoInt(b: Buffer, length: number): number {
+//   if (b[0] === CHAR_MINUS) {
+//     // b can be -1.1 or -11.1
+//     switch (length) {
+//       case 4:
+//         return -(parseOneDigit(b[1]) * 10 + parseOneDigit(b[3]));
+//       case 5:
+//         return -(
+//           parseOneDigit(b[1]) * 100 +
+//           parseOneDigit(b[2]) * 10 +
+//           parseOneDigit(b[4])
+//         );
+//     }
+//   } else {
+//     // b can be 1.1 or 11.1
+//     switch (length) {
+//       case 3: // b is 1.1
+//         return parseOneDigit(b[0]) * 10 + parseOneDigit(b[2]);
+//       case 4:
+//         return (
+//           parseOneDigit(b[0]) * 100 +
+//           parseOneDigit(b[1]) * 10 +
+//           parseOneDigit(b[3])
+//         );
+//     }
+//   }
+
+//   throw new Error("Failed to parse float buffer into int");
+// }
 
 /**
  * @param {number} char byte number of a digit char
  *
  * @returns {number}
  */
-function parseOneDigit(char: number) {
+function parseDigit(char: number) {
   return char - 0x30;
 }

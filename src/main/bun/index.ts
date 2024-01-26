@@ -2,7 +2,6 @@ import fsp from "node:fs/promises";
 import fs from "node:fs";
 import os from "node:os";
 import util from "node:util";
-import { Worker } from "node:worker_threads";
 
 const config = {
   MAX_LINE_LENGTH: 106,
@@ -32,8 +31,8 @@ type CalcResultsCont = Map<
 
 async function findChunkOffset(file: fsp.FileHandle) {
   const size = (await file.stat()).size;
-  const totalThreads = os.cpus().length;
-  const chunkSize = 1 || Math.floor(size / totalThreads);
+  const totalThreads = 1 || os.cpus().length;
+  const chunkSize = Math.floor(size / totalThreads);
   let offset = 0;
   const bufFindNl = Buffer.alloc(config.MAX_LINE_LENGTH);
   const chunkOffsets: number[] = [];
@@ -75,23 +74,23 @@ function distributeTask(filename: string, chunkOffsets: number[]) {
       end: chunkOffsets[idx],
     });
 
-    worker.addListener("messageerror", (event) => {
+    worker.addEventListener("messageerror", (event) => {
       console.error(event);
     });
 
-    worker.addListener("open", (event) => {
+    worker.addEventListener("open", (event) => {
       // console.error("Worker started");
     });
 
-    worker.addListener("error", (err) => {
+    worker.addEventListener("error", (err) => {
       console.error(err);
     });
 
-    worker.addListener("close", (event) => {
+    worker.addEventListener("close", (event) => {
       console.error("Worker stopped");
     });
 
-    worker.addListener("message", (event): void => {
+    worker.addEventListener("message", (event): void => {
       const message = event.data as CalcResultsCont;
 
       console.log(`Got map from worker: ${message.size}`);
@@ -120,6 +119,7 @@ function distributeTask(filename: string, chunkOffsets: number[]) {
 async function solve() {
   const filename = process.argv[2];
   if (!filename) throw new Error("Filename not provided");
+  console.log("Filename: ", filename);
   const file = await fsp.open(filename);
   const chunkOffsets = await findChunkOffset(file);
   distributeTask(filename, chunkOffsets);
