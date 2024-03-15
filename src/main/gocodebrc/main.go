@@ -3,5 +3,6 @@ package main
 import "gocodebrc/solutions"
 
 func main() {
-	solutions.Slow()
+	// solutions.Slow()
+	solutions.Naive()
 }
